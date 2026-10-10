@@ -14,7 +14,7 @@ jobs:
       - name: 检出代码仓库
         uses: actions/checkout@v4
 
-      - name: 配置 Node.js 环境
+      - name: 配置 Node.js 环境 (Node 22)
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -25,6 +25,11 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      - name: 准备 Web 静态资源打包目录
+        run: |
+          mkdir -p dist
+          cp index.html app.js icon.png manifest.json dist/ || true
+
       - name: 安装 Capacitor 打包依赖
         run: |
           npm init -y
@@ -32,10 +37,10 @@ jobs:
 
       - name: 初始化 Android 原生工程
         run: |
-          npx cap init "墨匠工坊" "com.inkmaster.novel" --web-dir "."
+          npx cap init "墨匠工坊" "com.inkmaster.novel" --web-dir "dist"
           npx cap add android
 
-      - name: 配置 Android 图标与静态资源
+      - name: 同步静态资源并生成 Android 构建
         run: |
           mkdir -p android/app/src/main/res/drawable
           cp icon.png android/app/src/main/res/drawable/icon.png || true
@@ -51,5 +56,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: 墨匠小说工坊-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
