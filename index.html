@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#F7F5F0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>墨匠·小说工坊</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root {
+      --bg-page: #F7F5F0;
+      --bg-card: #FFFFFF;
+      --bg-card-sub: #F0ECE1;
+      --text-main: #2D2926;
+      --text-sub: #7A736B;
+      --text-muted: #A39B92;
+      --accent: #B35436; /* 墨印红 / 熟褐 */
+      --accent-soft: rgba(179, 84, 54, 0.1);
+      --border-color: #E8E2D5;
+      --border-dashed: #D4CBBA;
+      --shadow-sm: 0 2px 6px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 14px rgba(0,0,0,0.06);
+      --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+      --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    input, textarea {
+      user-select: text;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* 顶部导航条 */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(247, 245, 240, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      padding-top: calc(12px + env(safe-area-inset-top));
+    }
+
+    .top-bar .title-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-bar .app-title {
+      font-family: var(--font-serif);
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .top-bar .app-subtitle {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 1px;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .icon-btn:active {
+      background: var(--bg-card-sub);
+    }
+
+    /* 视图容器 */
+    .view-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 64px; /* 底栏空间 */
+    }
+
+    .view-section {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      padding: 14px 16px;
+    }
+    .view-section.active {
+      display: flex;
+    }
+
+    /* 1. 书架视图 */
+    .books-stats-bar {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .book-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .book-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 154px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .book-card:active {
+      transform: scale(0.98);
+      background: #FAF8F5;
+    }
+
+    .book-tag {
+      align-self: flex-start;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .book-title {
+      font-family: var(--font-serif);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.35;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .book-meta {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: auto;
+    }
+    .book-time {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .add-book-card {
+      border: 1.5px dashed var(--border-dashed);
+      background: transparent;
+      border-radius: 12px;
+      height: 154px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-sub);
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: none;
+    }
+    .add-book-card:active {
+      background: var(--bg-card-sub);
+    }
+    .add-book-card .plus-icon {
+      font-size: 24px;
+      color: var(--accent);
+    }
+    .add-book-card .plus-label {
+      font-size: 13px;
+      font-family: var(--font-serif);
+      font-weight: 600;
+    }
+
+    /* 2. 设定页面 (Lore) */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      scrollbar-width: none;
+    }
+    .filter-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 12px;
+      color: var(--text-sub);
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .filter-pill.active {
+      background: var(--text-main);
+      color: #FFF;
+      border-color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .lore-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 14px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .lore-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .lore-title {
+      font-family: var(--font-serif);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .lore-badges {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .lore-badge {
+      background: var(--bg-card-sub);
+      color: var(--text-sub);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .lore-desc {
+      font-size: 12.5px;
+      color: #4A443E;
+      line-height: 1.55;
+    }
+
+    /* 3. 人物卡与关系网 */
+    .char-tab-bar {
+      display: flex;
+      background: var(--bg-card-sub);
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 12px;
+    }
+    .char-tab-btn {
+      flex: 1;
+      text-align: center;
+      padding: 6px 0;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-sub);
+    }
+    .char-tab-btn.active {
+      background: var(--bg-card);
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .char-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .char-avatar-box {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: #E8E2D5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-serif);
+      font-size: 20px;
+      font-weight: 700;
+      color: #FFF;
+      flex-shrink: 0;
+      border: 2px solid #FFF;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .char-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .char-name-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .char-name {
+      font-family: var(--font-serif);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .char-alias {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+    .char-tags {
+      font-size: 11px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .char-desc {
+      font-size: 12px;
+      color: #55504A;
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* 关系网 Canvas 容器 */
+    .relation-graph-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      height: 420px;
+      position: relative;
+      overflow: hidden;
+    }
+    #relationCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* 4. 章节与正文阅读/编辑 */
+    .chapter-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .chapter-title {
+      font-family: var(--font-serif);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .chapter-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* 5. 沉浸式写作与 AI 评论区 */
+    .reader-page {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .novel-content-box {
+      background: #FFF;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      line-height: 1.85;
+      font-family: var(--font-serif);
+      font-size: 15px;
+      color: #2D2926;
+      min-height: 160px;
+      white-space: pre-wrap;
+    }
+    .novel-editor-textarea {
+      width: 100%;
+      min-height: 220px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      font-family: var(--font-serif);
+      font-size: 15px;
+      line-height: 1.8;
+      background: #FFF;
+      color: var(--text-main);
+      resize: vertical;
+      outline: none;
+    }
+
+    /* 仿 RP Hub 评论区组件 */
+    .review-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+    .review-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 12px;
+    }
+    .review-title {
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .review-count-badge {
+      background: var(--bg-card-sub);
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      color: var(--text-sub);
+    }
+
+    .comment-item {
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--border-color);
+      display: flex;
+      gap: 10px;
+    }
+    .comment-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .comment-item.is-reply {
+      margin-left: 28px;
+      background: rgba(240, 236, 225, 0.45);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-top: 4px;
+      border-bottom: none;
+      border-left: 3px solid var(--accent);
+    }
+    .comment-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #8C8275;
+      color: #FFF;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .comment-avatar.reply-avatar {
+      width: 26px;
+      height: 26px;
+      font-size: 11px;
+      background: #6F665C;
+    }
+    .comment-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .comment-user-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .comment-username {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .comment-level {
+      font-size: 9px;
+      background: #F0ECE1;
+      color: #8C7853;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-weight: 700;
+    }
+    .comment-hot {
+      font-size: 9px;
+      background: #FFE8E5;
+      color: #D32F2F;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .comment-content {
+      font-size: 12.5px;
+      color: #383431;
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+    .comment-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* 续写与生成控制卡片 (参考 RP Hub) */
+    .generator-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 8px;
+    }
+    .gen-input {
+      width: 100%;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 13px;
+      background: #FAFAFA;
+      margin-bottom: 10px;
+      outline: none;
+    }
+    .gen-options-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .gen-select-group {
+      display: flex;
+      gap: 8px;
+    }
+    .gen-select {
+      border: 1px solid var(--border-color);
+      background: #FFF;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+    .btn-submit-write {
+      background: #1F1E1D;
+      color: #FFF;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      width: 100%;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-submit-write:active {
+      background: #3B3835;
+    }
+
+    /* 底部悬浮/固定导航栏 (参照墨匠·小说工坊底栏) */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: rgba(247, 245, 240, 0.96);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 90;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      height: 100%;
+      cursor: pointer;
+      color: var(--text-sub);
+      font-size: 11px;
+      font-weight: 500;
+      gap: 3px;
+      transition: color 0.15s;
+    }
+    .nav-item.active {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .nav-icon {
+      font-size: 17px;
+    }
+
+    /* 悬浮 + 新增按钮 */
+    .floating-add-btn {
+      position: fixed;
+      bottom: 74px;
+      right: 20px;
+      background: var(--text-main);
+      color: #FFF;
+      border-radius: 28px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 80;
+      cursor: pointer;
+    }
+    .floating-add-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* 弹窗模态框 (Modal) */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-box {
+      background: #FFF;
+      width: 100%;
+      max-height: 85vh;
+      border-radius: 18px 18px 0 0;
+      padding: 20px 18px;
+      padding-bottom: calc(20px + env(safe-area-inset-bottom));
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      animation: slideUp 0.2s ease-out;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 17px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+    .form-input, .form-textarea, .form-select {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 13px;
+      outline: none;
+      font-family: var(--font-sans);
+    }
+    .form-textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+    .modal-btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .btn-secondary {
+      flex: 1;
+      padding: 10px;
+      background: var(--bg-card-sub);
+      border: none;
+      border-radius: 8px;
+      color: var(--text-sub);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary {
+      flex: 1;
+      padding: 10px;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #FFF;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* 设置抽屉/弹窗 (API Key配置) */
+    .config-badge {
+      display: inline-block;
+      font-size: 10px;
+      background: #EAF4EC;
+      color: #2E7D32;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部状态与导航条 -->
+  <header class="top-bar">
+    <div class="title-group" id="topHeaderGroup" style="cursor: pointer;">
+      <div class="app-title" id="topTitle">
+        <span>星陨大陆</span>
+      </div>
+      <div class="app-subtitle" id="topSubtitle">共 1 部作品 · 累计 91 字 · 点击切换书架</div>
+    </div>
+      <div style="display: flex; gap: 6px;">
+        <button class="icon-btn" id="btnShelfToggle" title="返回书架">📚</button>
+        <button class="icon-btn" id="btnArchiveCenter" title="存档中心（导入/导出备份）">💾</button>
+        <button class="icon-btn" id="btnSettings" title="API与书评设置">⚙️</button>
+      </div>
+  </header>
+
+  <!-- 主视图容器 -->
+  <main class="view-container">
+
+    <!-- 1. 书架 (作品列表) 视图 -->
+    <section class="view-section active" id="viewBookshelf">
+      <div class="books-stats-bar">
+        <span id="shelfSummary">当前书架作品</span>
+        <button class="icon-btn" style="font-size: 12px; color: var(--accent);" id="btnImportTxt">+ 导入整本小说 TXT</button>
+      </div>
+      <div class="book-grid" id="bookGrid">
+        <!-- 动态渲染书籍卡片 -->
+      </div>
+    </section>
+
+    <!-- 2. 世界观与设定 (Lore) 视图 -->
+    <section class="view-section" id="viewSettings">
+      <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Tap顶部查看全书统计与设置</div>
+      <div class="filter-tabs" id="loreFilterTabs">
+        <div class="filter-pill active" data-cat="all">全部</div>
+        <div class="filter-pill" data-cat="地理">地理</div>
+        <div class="filter-pill" data-cat="势力">势力</div>
+        <div class="filter-pill" data-cat="体系">体系</div>
+        <div class="filter-pill" data-cat="物品">物品</div>
+        <div class="filter-pill" data-cat="种族">种族</div>
+      </div>
+      <div id="loreCardList">
+        <!-- 动态渲染设定卡片 -->
+      </div>
+    </section>
+
+    <!-- 3. 人物卡与关系网视图 -->
+    <section class="view-section" id="viewCharacters">
+      <div class="char-tab-bar">
+        <div class="char-tab-btn active" id="btnCharListTab">人物卡列表</div>
+        <div class="char-tab-btn" id="btnCharGraphTab">人物关系网 (拓扑图)</div>
+      </div>
+
+      <!-- 人物列表模式 -->
+      <div id="charListContent">
+        <div id="charCardList">
+          <!-- 动态渲染人物列表 -->
+        </div>
+      </div>
+
+      <!-- 人物关系网图谱模式 -->
+      <div id="charGraphContent" style="display: none;">
+        <div class="relation-graph-wrapper">
+          <canvas id="relationCanvas"></canvas>
+          <div style="position: absolute; top: 10px; left: 12px; font-size: 11px; color: var(--text-muted); pointer-events: none;">
+            拖拽节点查看关系 / 点击节点查看人物卡
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 大纲视图 -->
+    <section class="view-section" id="viewOutline">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-size: 14px; font-weight: 700; font-family: var(--font-serif);">故事大纲与分卷脉络</span>
+      </div>
+      <div id="outlineList">
+        <!-- 大纲条目 -->
+      </div>
+    </section>
+
+    <!-- 4.5 时间线视图 (对应截图「时间」) -->
+    <section class="view-section" id="viewTimeline">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-size: 14px; font-weight: 700; font-family: var(--font-serif);">时间线与大事纪</span>
+      </div>
+      <div id="timelineList">
+        <!-- 时间线条目 -->
+      </div>
+    </section>
+
+    <!-- 5. 章节目录与写作台视图 -->
+    <section class="view-section" id="viewChapters">
+      <!-- 模式A: 章节目录列表 -->
+      <div id="chapterListMode">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 13px; font-weight: 700; color: var(--text-main); font-family: var(--font-serif);">书籍目录与正文</span>
+          <button class="icon-btn" style="font-size: 12px; color: var(--accent);" id="btnExportBookTxt">导出整本 TXT</button>
+        </div>
+        <div id="chapterItemsContainer">
+          <!-- 章节列表 -->
+        </div>
+      </div>
+
+      <!-- 模式B: 沉浸式写作 + RP Hub 风格评论区 & AI 提笔续写 -->
+      <div id="chapterEditorMode" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <button class="icon-btn" id="btnBackToChapters" style="font-size: 13px;">← 返回目录</button>
+          <span id="currentEditingChapterTitle" style="font-family: var(--font-serif); font-weight: 700;">第1章</span>
+          <button class="icon-btn" id="btnSaveChapter" style="font-size: 13px; color: var(--accent);">保存</button>
+        </div>
+
+        <textarea class="novel-editor-textarea" id="chapterBodyInput" placeholder="在这里写下你的故事..."></textarea>
+
+        <!-- 评论区 (仿 RP Hub) -->
+        <div class="review-section">
+          <div class="review-header">
+            <div class="review-title">
+              <span>本章书评</span>
+              <span class="review-count-badge" id="reviewCountBadge">0</span>
+            </div>
+            <button class="icon-btn" id="btnRefreshComments" style="font-size: 12px; color: var(--accent);">
+              ✨ AI 生成本章书评
+            </button>
+          </div>
+          <div id="commentsContainer">
+            <!-- 评论列表 -->
+          </div>
+        </div>
+
+        <!-- 提笔续写 (参考 RP Hub) -->
+        <div class="generator-card">
+          <input type="text" class="gen-input" id="nextPlotPrompt" placeholder="下一章剧情走向（可选，指导AI续写方向）...">
+          <div class="gen-options-row">
+            <div class="gen-select-group">
+              <label style="font-size: 11px; color: var(--text-sub); display: flex; align-items: center;">
+                字数：
+                <select class="gen-select" id="genLengthSelect">
+                  <option value="short">少 (~500字)</option>
+                  <option value="medium" selected>中 (~1200字)</option>
+                  <option value="long">多 (~2500字)</option>
+                </select>
+              </label>
+              <label style="font-size: 11px; color: var(--text-sub); display: flex; align-items: center;">
+                生成：
+                <select class="gen-select" id="genCountSelect">
+                  <option value="1">1 章</option>
+                  <option value="2">2 章</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <button class="btn-submit-write" id="btnAiContinue">
+            <span>提笔续写 🖊</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 悬浮新增按钮 (在设定、人物、章节页浮动) -->
+  <button class="floating-add-btn" id="floatingAddBtn" style="display: none;">
+    <span style="font-size: 16px;">+</span>
+    <span id="floatingAddText">新增设定</span>
+  </button>
+
+  <!-- 底部核心导航栏 (墨匠经典底栏: 设定、人物、时间、大纲、目录/章节) -->
+  <nav class="bottom-nav">
+    <div class="nav-item" data-view="viewSettings">
+      <span class="nav-icon">🗺️</span>
+      <span>设定</span>
+    </div>
+    <div class="nav-item" data-view="viewCharacters">
+      <span class="nav-icon">👥</span>
+      <span>人物</span>
+    </div>
+    <div class="nav-item" data-view="viewTimeline">
+      <span class="nav-icon">⏳</span>
+      <span>时间</span>
+    </div>
+    <div class="nav-item" data-view="viewOutline">
+      <span class="nav-icon">📜</span>
+      <span>大纲</span>
+    </div>
+    <div class="nav-item active" data-view="viewChapters">
+      <span class="nav-icon">📑</span>
+      <span>目录</span>
+    </div>
+  </nav>
+
+  <!-- 模态框 1: 新建/编辑小说 -->
+  <div class="modal-overlay" id="modalBook">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span id="modalBookTitle">新建小说作品</span>
+        <button class="icon-btn" onclick="closeModal('modalBook')">✕</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">作品书名 *</label>
+        <input type="text" class="form-input" id="bookInputTitle" placeholder="如：星陨大陆">
+      </div>
+      <div class="form-group">
+        <label class="form-label">作品类型 / 标签</label>
+        <input type="text" class="form-input" id="bookInputTag" placeholder="如：玄幻、科幻、悬疑、轻小说">
+      </div>
+      <div class="form-group">
+        <label class="form-label">作品简述 / 一句话简介</label>
+        <textarea class="form-textarea" id="bookInputDesc" placeholder="简要描述这本小说的核心主线..."></textarea>
+      </div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" onclick="closeModal('modalBook')">取消</button>
+        <button class="btn-primary" id="btnSaveBook">确认保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模态框 2: 新增/编辑设定 (Lore) -->
+  <div class="modal-overlay" id="modalLore">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span id="modalLoreTitle">新增设定条目</span>
+        <button class="icon-btn" onclick="closeModal('modalLore')">✕</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">设定名称 *</label>
+        <input type="text" class="form-input" id="loreInputName" placeholder="如：观星台遗址群">
+      </div>
+      <div class="form-group">
+        <label class="form-label">主分类</label>
+        <select class="form-select" id="loreInputCategory">
+          <option value="地理">地理</option>
+          <option value="势力">势力</option>
+          <option value="体系">体系</option>
+          <option value="物品">物品</option>
+          <option value="种族">种族</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">二级标签 (空格分隔)</label>
+        <input type="text" class="form-input" id="loreInputTags" placeholder="如：王朝 组织 核心设定">
+      </div>
+      <div class="form-group">
+        <label class="form-label">详细设定说明</label>
+        <textarea class="form-textarea" id="loreInputContent" placeholder="详细描述该设定的背景、规则或特性..."></textarea>
+      </div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" onclick="closeModal('modalLore')">取消</button>
+        <button class="btn-primary" id="btnSaveLore">保存设定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模态框 3: 编辑人物卡 (参照截图4) -->
+  <div class="modal-overlay" id="modalChar">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>编辑人物卡</span>
+        <button class="icon-btn" onclick="closeModal('modalChar')">✕</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">姓名 *</label>
+        <input type="text" class="form-input" id="charInputName" placeholder="如：陈星阑">
+      </div>
+      <div class="form-group">
+        <label class="form-label">代表色</label>
+        <input type="color" id="charInputColor" value="#3B6998" style="height: 38px; width: 100%; border: 1px solid var(--border-color); border-radius: 8px; background: #FFF; cursor: pointer;">
+      </div>
+      <div class="form-group">
+        <label class="form-label">别名 / 称号</label>
+        <input type="text" class="form-input" id="charInputAlias" placeholder="如：拾荒少年、剑圣">
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">性别</label>
+          <input type="text" class="form-input" id="charInputGender" placeholder="男 / 女">
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">年龄</label>
+          <input type="text" class="form-input" id="charInputAge" placeholder="16">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">身份 / 阵营</label>
+        <input type="text" class="form-input" id="charInputIdentity" placeholder="如：边镇拾荒少年 / 司天监">
+      </div>
+      <div class="form-group">
+        <label class="form-label">能力 / 武功 / 命格</label>
+        <input type="text" class="form-input" id="charInputPower" placeholder="如：天生星瞳，可直视星核本质">
+      </div>
+      <div class="form-group">
+        <label class="form-label">外貌特征</label>
+        <textarea class="form-textarea" id="charInputAppearance" placeholder="外貌、着装、标志性神态描写..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">背景故事与性格</label>
+        <textarea class="form-textarea" id="charInputStory" placeholder="身世、性格特质、核心愿望与弱点..."></textarea>
+      </div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" onclick="closeModal('modalChar')">取消</button>
+        <button class="btn-primary" id="btnSaveChar">保存人物</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模态框 4: API 与 AI 书评设置 (用于 AI 评论区与续写) -->
+  <div class="modal-overlay" id="modalSettings">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>AI 接口与书评设置</span>
+        <button class="icon-btn" onclick="closeModal('modalSettings')">✕</button>
+      </div>
+      <div style="font-size: 12px; color: var(--text-sub); line-height: 1.5;">
+        你可以自定义 AI 读者的书评生成策略（数量、长度、毒舌/热情风格），并配置 OpenAI / DeepSeek 兼容接口。
+      </div>
+
+      <div style="background: var(--bg-card-sub); padding: 12px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">💬 AI 书评偏好设置</span>
+        
+        <div style="display: flex; gap: 10px;">
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">每次生成书评数量</label>
+            <select class="form-select" id="settingCommentCount">
+              <option value="2">2 条 (精简精选)</option>
+              <option value="3" selected>3 条 (标准热议)</option>
+              <option value="5">5 条 (热闹社区)</option>
+              <option value="8">8 条 (爆款刷屏)</option>
+              <option value="10">10 条 (热度破万·全场沸腾)</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">单条书评长度</label>
+            <select class="form-select" id="settingCommentLength">
+              <option value="short">短评 (30-60字 一针见血)</option>
+              <option value="medium" selected>中评 (80-150字 深度解析)</option>
+              <option value="long">长评 (180-300字 小作文)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="display: flex; align-items: center; justify-content: space-between;">
+            <span>💬 楼中楼对线 / AI 读者互动回复</span>
+            <input type="checkbox" id="settingAllowReplies" checked style="width: 18px; height: 18px; cursor: pointer;">
+          </label>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: -2px;">
+            开启后，AI 读者会在评论区互相引用对线、抱团赞同或反驳（如截图里楼中楼热议）
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">读者群体风格 / 社区氛围</label>
+          <select class="form-select" id="settingCommentStyle">
+            <option value="mixed" selected>多元杂糅 (有玩梗幽默、有考究党、有催更催死)</option>
+            <option value="toxic">毒舌考究党 (犀利挑伏笔、逻辑严密、不留情面)</option>
+            <option value="hype">全员厨力狂欢 (吹爆神作、激动尖叫、打滚催更)</option>
+            <option value="meme">贴吧抽象乐子人 (谐音梗、迫害主角、满嘴骚话)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">API Base URL</label>
+        <input type="text" class="form-input" id="apiBaseUrl" placeholder="https://api.deepseek.com/v1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Key (留空则默认使用拟真本地读者)</label>
+        <input type="password" class="form-input" id="apiKey" placeholder="sk-...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">模型名称</label>
+        <input type="text" class="form-input" id="apiModel" placeholder="deepseek-chat">
+      </div>
+      <div class="modal-btn-row">
+        <button class="btn-secondary" onclick="closeModal('modalSettings')">取消</button>
+        <button class="btn-primary" id="btnSaveSettings">保存配置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模态框 5: 存档中心与全量备份导入导出 -->
+  <div class="modal-overlay" id="modalArchive">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>💾 存档管理中心</span>
+        <button class="icon-btn" onclick="closeModal('modalArchive')">✕</button>
+      </div>
+      <div style="font-size: 12px; color: var(--text-sub); line-height: 1.5;">
+        所有小说、设定、人物卡与正文均保存在手机本地离线数据库中。随时导出存档文件，在电脑或换手机时一键导入恢复，永不丢稿！
+      </div>
+
+      <div style="background: var(--bg-card-sub); padding: 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-weight: 700; font-size: 13px;">📤 导出全量存档 (备份)</span>
+        <div style="font-size: 11.5px; color: var(--text-sub);">
+          将当前书架上所有作品、世界观、人物卡、大纲及全部章节打包下载为 <code>.json</code> 存档。
+        </div>
+        <button class="btn-primary" id="btnExportFullArchive" style="margin-top: 4px;">导出并下载全量存档 ⬇️</button>
+      </div>
+
+      <div style="background: var(--bg-card-sub); padding: 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-weight: 700; font-size: 13px;">📥 导入恢复存档</span>
+        <div style="font-size: 11.5px; color: var(--text-sub);">
+          从本地选择先前导出的 <code>.json</code> 存档文件，一键完整恢复作品库。
+        </div>
+        <button class="btn-secondary" id="btnImportArchiveTrigger" style="margin-top: 4px; background: #FFF; border: 1px solid var(--border-color); color: var(--text-main);">
+          选择并导入存档文件 📂
+        </button>
+      </div>
+
+      <div style="background: #FFF5F5; border: 1px solid #FFD0D0; padding: 12px; border-radius: 10px; display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-weight: 700; font-size: 12.5px; color: #D32F2F;">⚠️ 危险操作：清空或重置</span>
+        <div style="font-size: 11px; color: #8C5353;">
+          如果不需要示例模板（如星陨大陆），可一键清空重置为一个完全空白的全新工坊。
+        </div>
+        <button class="icon-btn" id="btnResetToBlank" style="border: 1px solid #FFCDD2; background: #FFF; color: #D32F2F; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px;">
+          清空所有数据（初始化空白书架）
+        </button>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="btn-secondary" onclick="closeModal('modalArchive')">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 隐藏的文件选择输入框 -->
+  <input type="file" id="archiveFileInput" accept=".json" style="display: none;">
+  <input type="file" id="txtFileInput" accept=".txt" style="display: none;">
+
+  <script src="app.js"></script>
+</body>
+</html>
